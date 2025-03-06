@@ -5,9 +5,10 @@ import static de.caritas.cob.statisticsservice.api.testhelper.TestConstants.ASKE
 import static de.caritas.cob.statisticsservice.api.testhelper.TestConstants.CONSULTING_TYPE_ID;
 import static de.caritas.cob.statisticsservice.api.testhelper.TestConstants.TENANT_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -21,25 +22,29 @@ import de.caritas.cob.statisticsservice.api.statistics.model.statisticsevent.Sta
 import de.caritas.cob.statisticsservice.api.statistics.model.statisticsevent.StatisticsEvent;
 import de.caritas.cob.statisticsservice.api.statistics.model.statisticsevent.User;
 import de.caritas.cob.statisticsservice.api.statistics.model.statisticsevent.meta.ArchiveMetaData;
-import de.caritas.cob.statisticsservice.api.statistics.model.statisticsevent.meta.DeleteAccountMetaData;
 import de.caritas.cob.statisticsservice.api.statistics.model.statisticsevent.meta.RegistrationMetaData;
 import de.caritas.cob.statisticsservice.api.statistics.repository.StatisticsEventRepository;
 import de.caritas.cob.statisticsservice.api.statistics.repository.StatisticsEventTenantAwareRepository;
 import de.caritas.cob.statisticsservice.api.tenant.TenantContext;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class RegistrationStatisticsServiceTest {
+
+  public static final int DAYS_IN_YEAR = 365;
   @InjectMocks
   RegistrationStatisticsService registrationStatisticsService;
   @Mock
@@ -48,6 +53,7 @@ class RegistrationStatisticsServiceTest {
   StatisticsEventTenantAwareRepository statisticsEventTenantAwareRepository;
   @Spy
   RegistrationStatisticsDTOConverter registrationStatisticsDTOConverter;
+
 
   @BeforeEach
   void setup() {
@@ -59,11 +65,23 @@ class RegistrationStatisticsServiceTest {
     // when
     registrationStatisticsService.fetchRegistrationStatisticsData();
 
+    ArgumentCaptor<Instant> argumentCaptor = ArgumentCaptor.forClass(Instant.class);
     // then
     verify(statisticsEventRepository)
-        .getAllRegistrationStatistics();
+        .getAllRegistrationStatistics(argumentCaptor.capture());
+
+    assertThat(argumentCaptor.getValue().getEpochSecond(), lessThan(Instant.now().minus(
+        DAYS_IN_YEAR - 1, ChronoUnit.DAYS).getEpochSecond()));
+    assertThat(argumentCaptor.getValue().getEpochSecond(),
+        greaterThan(Instant.now().minus(DAYS_IN_YEAR + 1, ChronoUnit.DAYS).getEpochSecond()));
+
     verify(statisticsEventRepository)
-        .getAllRegistrationStatistics();
+        .getAllRegistrationStatistics(argumentCaptor.capture());
+    assertThat(argumentCaptor.getValue().getEpochSecond(),
+        lessThan(Instant.now().minus(DAYS_IN_YEAR - 1, ChronoUnit.DAYS).getEpochSecond()));
+    assertThat(argumentCaptor.getValue().getEpochSecond(),
+        greaterThan(Instant.now().minus(DAYS_IN_YEAR + 1, ChronoUnit.DAYS).getEpochSecond()));
+
     verifyNoInteractions(statisticsEventTenantAwareRepository);
   }
 
@@ -78,9 +96,9 @@ class RegistrationStatisticsServiceTest {
 
     // then
     verify(statisticsEventTenantAwareRepository)
-        .getAllRegistrationStatistics(TENANT_ID);
+        .getAllRegistrationStatistics(Mockito.eq(TENANT_ID), Mockito.any(Instant.class));
     verify(statisticsEventTenantAwareRepository)
-        .getAllRegistrationStatistics(TENANT_ID);
+        .getAllRegistrationStatistics(Mockito.eq(TENANT_ID), Mockito.any(Instant.class));
     verifyNoInteractions(statisticsEventRepository);
 
     TenantContext.clear();
@@ -95,8 +113,9 @@ class RegistrationStatisticsServiceTest {
     var result = registrationStatisticsService.fetchRegistrationStatisticsData();
 
     // then
-    verify(registrationStatisticsDTOConverter).convertStatisticsEvent(any(StatisticsEvent.class), any(
-        StatisticEventsContainer.class));
+    verify(registrationStatisticsDTOConverter).convertStatisticsEvent(any(StatisticsEvent.class),
+        any(
+            StatisticEventsContainer.class));
 
     assertThat(result.getRegistrationStatistics().get(0).getUserId(), is(ASKER_ID));
     assertThat(result.getRegistrationStatistics().get(0).getRegistrationDate(),
@@ -122,7 +141,8 @@ class RegistrationStatisticsServiceTest {
     var result = registrationStatisticsService.fetchRegistrationStatisticsData();
 
     // then
-    verify(registrationStatisticsDTOConverter).convertStatisticsEvent(any(StatisticsEvent.class), any(StatisticEventsContainer.class));
+    verify(registrationStatisticsDTOConverter).convertStatisticsEvent(any(StatisticsEvent.class),
+        any(StatisticEventsContainer.class));
 
     assertThat(result.getRegistrationStatistics().get(0).getEndDate(), is("end date 1"));
 
@@ -151,30 +171,19 @@ class RegistrationStatisticsServiceTest {
         .build()
     );
 
-    when(statisticsEventRepository.getAllRegistrationStatistics()).thenReturn(testData);
+    when(statisticsEventRepository.getAllRegistrationStatistics(
+        Mockito.any(Instant.class))).thenReturn(testData);
   }
 
   private void givenArchiveSessionEvents() {
     List<StatisticsEvent> archiveEvents = List.of(archiveSessionEvent(1L, "end date 1"),
         archiveSessionEvent(99L, "end date 2"));
-    when(statisticsEventRepository.getAllArchiveSessionEvents()).thenReturn(archiveEvents);
-  }
-
-  private void givenDeleteSessionEvents() {
-    List<StatisticsEvent> deleteAccountEvents = List.of(archiveSessionEvent(1L, "end date 1"),
-        archiveSessionEvent(99L, "end date 2"));
-    when(statisticsEventRepository.getAllDeleteAccountSessionEvents()).thenReturn(deleteAccountEvents);
+    when(statisticsEventRepository.getAllArchiveSessionEvents(
+        Mockito.any(Instant.class))).thenReturn(archiveEvents);
   }
 
   private StatisticsEvent archiveSessionEvent(Long sessionId, String endDate) {
     Object metaData = ArchiveMetaData.builder().endDate(endDate).build();
     return StatisticsEvent.builder().sessionId(sessionId).metaData(metaData).build();
-  }
-
-  private StatisticsEvent deleteAccountEvents(String userId, String deleteDate) {
-    User user = new User();
-    user.setId(userId);
-    Object metaData = DeleteAccountMetaData.builder().deleteDate(deleteDate).build();
-    return StatisticsEvent.builder().user(user).metaData(metaData).build();
   }
 }

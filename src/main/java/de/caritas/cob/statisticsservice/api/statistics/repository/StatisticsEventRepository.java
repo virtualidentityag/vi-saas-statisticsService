@@ -80,20 +80,20 @@ public interface StatisticsEventRepository extends MongoRepository<StatisticsEve
   @Query(value = "{'user._id': ?0, 'eventType': 'ASSIGN_SESSION', 'timestamp':{$gte:?1,$lte:?2}}", count = true)
   long calculateNumberOfAssignedSessionsForUser(String userId, Instant dateFrom, Instant dateTo);
 
-  @Query(value = "{'eventType': 'REGISTRATION'}")
-  List<StatisticsEvent> getAllRegistrationStatistics();
+  @Query(value = "{'eventType': 'REGISTRATION', 'timestamp':{$gte:?0}}")
+  List<StatisticsEvent> getAllRegistrationStatistics(Instant dateFrom);
 
   @Query(value = "{'eventType': 'START_VIDEO_CALL'}")
   List<StatisticsEvent> getAllStartVideoCallSessionEvents();
 
-  @Query(value = "{'eventType': 'ARCHIVE_SESSION'}")
-  List<StatisticsEvent> getAllArchiveSessionEvents();
+  @Query(value = "{'eventType': 'ARCHIVE_SESSION', 'timestamp':{$gte:?0}}}")
+  List<StatisticsEvent> getAllArchiveSessionEvents(Instant dateFrom);
 
   @Query(value = "{'eventType': 'BOOKING_CREATED'}")
   List<StatisticsEvent> getAllBookingCreatedEvents();
 
-  @Query(value = "{'eventType': 'DELETE_ACCOUNT'}")
-  List<StatisticsEvent> getAllDeleteAccountSessionEvents();
+  @Query(value = "{'eventType': 'DELETE_ACCOUNT', 'timestamp':{$gte:?0}}}")
+  List<StatisticsEvent> getAllDeleteAccountSessionEvents(Instant dateFrom);
 
   @Query(value = "{'eventType': 'CREATE_MESSAGE', 'user.userRole': 'CONSULTANT'}")
   List<StatisticsEvent> getConsultantMessageCreatedEvents();

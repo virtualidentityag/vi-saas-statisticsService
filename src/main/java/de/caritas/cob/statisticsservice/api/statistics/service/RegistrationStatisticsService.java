@@ -8,6 +8,10 @@ import de.caritas.cob.statisticsservice.api.statistics.model.statisticsevent.Sta
 import de.caritas.cob.statisticsservice.api.statistics.repository.StatisticsEventRepository;
 import de.caritas.cob.statisticsservice.api.statistics.repository.StatisticsEventTenantAwareRepository;
 import de.caritas.cob.statisticsservice.api.tenant.TenantContext;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalUnit;
 import java.util.Collection;
 import java.util.List;
 import lombok.NonNull;
@@ -21,6 +25,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class RegistrationStatisticsService {
 
+  private static final Instant LAST_YEAR_INSTANT = Instant.now().minus(365, ChronoUnit.DAYS);
 
   @Value("${multitenancy.enabled}")
   private Boolean multitenancyEnabled;
@@ -114,30 +119,30 @@ public class RegistrationStatisticsService {
 
   private List<StatisticsEvent> getDeleteAccountEventsForAllTenants() {
     log.info("Gathering delete account events for all tenants");
-    return statisticsEventRepository.getAllDeleteAccountSessionEvents();
+    return statisticsEventRepository.getAllDeleteAccountSessionEvents(LAST_YEAR_INSTANT);
   }
 
   private List<StatisticsEvent> getDeleteAccountEventsForCurrentTenant() {
     log.info("Gathering delete account events for current tenant");
     return statisticsEventTenantAwareRepository.getAllDeleteAccountSessionEvents(
-        TenantContext.getCurrentTenant());
+        TenantContext.getCurrentTenant(), LAST_YEAR_INSTANT);
   }
 
   private List<StatisticsEvent> getRegistrationStatisticsForCurrentTenant() {
     log.info("Gathering registration statistics for tenant with id {}",
         TenantContext.getCurrentTenant());
     return statisticsEventTenantAwareRepository.getAllRegistrationStatistics(
-        TenantContext.getCurrentTenant());
+        TenantContext.getCurrentTenant(), LAST_YEAR_INSTANT);
   }
 
   private List<StatisticsEvent> getRegistrationStatisticsForAllTenants() {
     log.info("Gathering registration statistics for all tenants");
-    return statisticsEventRepository.getAllRegistrationStatistics();
+    return statisticsEventRepository.getAllRegistrationStatistics(LAST_YEAR_INSTANT);
   }
 
   private List<StatisticsEvent> getArchiveSessionEventsForAllTenants() {
     log.info("Gathering archive sessions events for all tenants");
-    return statisticsEventRepository.getAllArchiveSessionEvents();
+    return statisticsEventRepository.getAllArchiveSessionEvents(LAST_YEAR_INSTANT);
   }
 
   private List<StatisticsEvent> getMessageCreatedEventsForAllTenants() {
@@ -167,7 +172,7 @@ public class RegistrationStatisticsService {
     log.info("Gathering archive session events for tenant with id {}",
         TenantContext.getCurrentTenant());
     return statisticsEventTenantAwareRepository.getAllArchiveSessionEvents(
-        TenantContext.getCurrentTenant());
+        TenantContext.getCurrentTenant(), LAST_YEAR_INSTANT);
   }
 
   private boolean isAllTenantAccessContext() {

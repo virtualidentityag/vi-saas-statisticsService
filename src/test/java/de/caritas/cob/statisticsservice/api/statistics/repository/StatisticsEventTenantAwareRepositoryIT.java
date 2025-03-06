@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.caritas.cob.statisticsservice.StatisticsServiceApplication;
 import de.caritas.cob.statisticsservice.api.statistics.model.statisticsevent.StatisticsEvent;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,13 +57,13 @@ public class StatisticsEventTenantAwareRepositoryIT {
   @Test
   public void getAllRegistrationStatistics_Should_ReturnRegistrationStatisticsFilteredByTenantId() {
 
-    List<StatisticsEvent> allRegistrationStatistics = statisticsEventTenantAwareRepository.getAllRegistrationStatistics(1L);
+    List<StatisticsEvent> allRegistrationStatistics = statisticsEventTenantAwareRepository.getAllRegistrationStatistics(1L, Instant.MIN);
     assertThat(allRegistrationStatistics, hasSize(1));
   }
 
   @Test
   public void getAllArchiveSessionEvents_Should_ReturnArchiveSessionEventsFilteredByTenantId() {
-    List<StatisticsEvent> allArchiveSessionEvents = statisticsEventTenantAwareRepository.getAllArchiveSessionEvents(1L);
+    List<StatisticsEvent> allArchiveSessionEvents = statisticsEventTenantAwareRepository.getAllArchiveSessionEvents(1L, Instant.MIN);
     assertThat(allArchiveSessionEvents, hasSize(2));
   }
 }

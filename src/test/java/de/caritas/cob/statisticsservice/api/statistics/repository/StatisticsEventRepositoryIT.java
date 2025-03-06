@@ -128,13 +128,13 @@ public class StatisticsEventRepositoryIT {
   @Test
   public void getAllRegistrationStatistics_Should_ReturnRegistrationStatistics() {
 
-    List<StatisticsEvent> allRegistrationStatistics = statisticsEventRepository.getAllRegistrationStatistics();
+    List<StatisticsEvent> allRegistrationStatistics = statisticsEventRepository.getAllRegistrationStatistics(Instant.MIN);
     assertThat(allRegistrationStatistics, hasSize(2));
   }
 
   @Test
   public void getAllArchiveSessionEvents_Should_ReturnArchiveSessionEvents() {
-    List<StatisticsEvent> allArchiveSessionEvents = statisticsEventRepository.getAllArchiveSessionEvents();
+    List<StatisticsEvent> allArchiveSessionEvents = statisticsEventRepository.getAllArchiveSessionEvents(Instant.MIN);
     assertThat(allArchiveSessionEvents, hasSize(3));
   }
 
